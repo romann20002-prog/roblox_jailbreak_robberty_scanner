@@ -1,14 +1,11 @@
--- HEIST_SCANNER_MARKER (key loader; contains no secrets - safe to keep in a public repo)
--- Key system window: choose Linkvertise / Work.ink / Lootlabs, get a key, paste it, and the
--- scanner is downloaded from your server only if the key is valid for THIS device (HWID).
--- A saved key is re-checked silently on every start, so the scanner restarts itself after a server hop.
+-- HEIST_SCANNER_MARKER
 
 local env = (getgenv and getgenv()) or _G
 if env.KeyLoaderJob == game.JobId then return end
 env.KeyLoaderJob = game.JobId
 
 local CONFIG = {
-    WORKER_URL = "https://keysystem-eight-gray.vercel.app/",  -- <- your Vercel address, e.g. https://scanner-keys.vercel.app (no trailing slash)
+    WORKER_URL = "https://keysystem-eight-gray.vercel.app/",
     FOLDER     = "Scanner",
     KEY_FILE   = "key.txt",
 }
@@ -20,7 +17,6 @@ local req = (syn and syn.request) or http_request or request
 
 if not game:IsLoaded() then game.Loaded:Wait() end
 
--- ============ files ============
 local folderOk = false
 pcall(function()
     if isfolder and not isfolder(CONFIG.FOLDER) then makefolder(CONFIG.FOLDER) end
@@ -44,7 +40,6 @@ local function saveKey(key)
     pcall(writefile, P(CONFIG.KEY_FILE), key)
 end
 
--- ============ HWID ============
 local function getHwid()
     local id
     pcall(function() id = game:GetService("RbxAnalyticsService"):GetClientId() end)
@@ -57,8 +52,6 @@ end
 
 local HWID = getHwid()
 
--- ============ server calls ============
--- returns script source, or nil + reason
 local function fetchScript(key)
     if #HWID < 8 then return nil, "Could not read your device id (HWID)" end
     local ok, res = pcall(function()
@@ -88,7 +81,6 @@ local function runScript(src)
     return true
 end
 
--- ============ silent start with a saved key ============
 do
     local saved = readKey()
     if saved then
@@ -97,7 +89,6 @@ do
     end
 end
 
--- ============ GUI (English) ============
 local white = Color3.new(1, 1, 1)
 local btnColor = Color3.fromRGB(50, 53, 62)
 local onColor = Color3.fromRGB(50, 150, 80)
