@@ -10,6 +10,8 @@ local CONFIG = {
     KEY_FILE   = "key.txt",
 }
 
+local BASE = (CONFIG.WORKER_URL:gsub("/+$", "")) -- адреса без кінцевого "/"
+
 local HttpService = game:GetService("HttpService")
 local Players     = game:GetService("Players")
 local LP          = Players.LocalPlayer
@@ -56,7 +58,7 @@ local function fetchScript(key)
     if #HWID < 8 then return nil, "Could not read your device id (HWID)" end
     local ok, res = pcall(function()
         return req({
-            Url = CONFIG.WORKER_URL .. "/api/script",
+            Url = BASE .. "/api/script",
             Method = "POST",
             Headers = { ["Content-Type"] = "application/json" },
             Body = HttpService:JSONEncode({ key = key, hwid = HWID }),
@@ -112,8 +114,8 @@ do
 end
 
 local frame = make("Frame", {
-    Size = UDim2.fromOffset(300, 290),
-    Position = UDim2.new(0.5, -150, 0.5, -145),
+    Size = UDim2.fromOffset(300, 324),
+    Position = UDim2.new(0.5, -150, 0.5, -162),
     BackgroundColor3 = Color3.fromRGB(28, 30, 36),
     BorderSizePixel = 0, Active = true, Draggable = true,
 }, gui)
@@ -142,18 +144,25 @@ local PROVIDERS = {
     { id = "workink",     label = "Work.ink" },
     { id = "lootlabs",    label = "Lootlabs" },
 }
+-- hours = строк ключа, steps = скільки разів треба пройти посилання (24h = 1 крок, 48h = 2, 72h = 3)
+local DURATIONS = { 24, 48, 72 }
 local provider = PROVIDERS[1].id
+local hours = DURATIONS[1]
 local provBtns = {}
+local durBtns = {}
 
 local linkBox, statusLabel
 
 local function currentLink()
-    return ("%s/start?hwid=%s&p=%s"):format(CONFIG.WORKER_URL, HWID, provider)
+    return ("%s/start?hwid=%s&p=%s&h=%d"):format(BASE, HWID, provider, hours)
 end
 
 local function refreshProviders()
     for _, p in ipairs(PROVIDERS) do
         provBtns[p.id].BackgroundColor3 = (p.id == provider) and onColor or btnColor
+    end
+    for _, h in ipairs(DURATIONS) do
+        durBtns[h].BackgroundColor3 = (h == hours) and onColor or btnColor
     end
     if linkBox then linkBox.Text = "" end
 end
@@ -172,15 +181,29 @@ for i, p in ipairs(PROVIDERS) do
     end)
 end
 
+for i, h in ipairs(DURATIONS) do
+    local b = make("TextButton", {
+        Size = UDim2.fromOffset(88, 26), Position = UDim2.fromOffset(10 + (i - 1) * 96, 88),
+        BackgroundColor3 = btnColor, Text = ("%dh · %d step%s"):format(h, h / 24, h > 24 and "s" or ""),
+        TextColor3 = white, Font = Enum.Font.GothamBold, TextSize = 10, BorderSizePixel = 0,
+    }, frame)
+    make("UICorner", { CornerRadius = UDim.new(0, 6) }, b)
+    durBtns[h] = b
+    b.MouseButton1Click:Connect(function()
+        hours = h
+        refreshProviders()
+    end)
+end
+
 local linkBtn = make("TextButton", {
-    Size = UDim2.fromOffset(280, 28), Position = UDim2.fromOffset(10, 88),
+    Size = UDim2.fromOffset(280, 28), Position = UDim2.fromOffset(10, 122),
     BackgroundColor3 = Color3.fromRGB(65, 95, 145), Text = "Get Link", TextColor3 = white,
     Font = Enum.Font.GothamBold, TextSize = 12, BorderSizePixel = 0,
 }, frame)
 make("UICorner", { CornerRadius = UDim.new(0, 6) }, linkBtn)
 
 linkBox = make("TextBox", {
-    Size = UDim2.fromOffset(280, 24), Position = UDim2.fromOffset(10, 122),
+    Size = UDim2.fromOffset(280, 24), Position = UDim2.fromOffset(10, 156),
     BackgroundColor3 = Color3.fromRGB(40, 43, 52), TextColor3 = Color3.fromRGB(200, 200, 210),
     PlaceholderText = "Your link appears here", PlaceholderColor3 = Color3.fromRGB(120, 120, 130),
     Text = "", ClearTextOnFocus = false, Font = Enum.Font.Gotham, TextSize = 10,
@@ -189,7 +212,7 @@ linkBox = make("TextBox", {
 make("UICorner", { CornerRadius = UDim.new(0, 6) }, linkBox)
 
 local keyBox = make("TextBox", {
-    Size = UDim2.fromOffset(280, 30), Position = UDim2.fromOffset(10, 156),
+    Size = UDim2.fromOffset(280, 30), Position = UDim2.fromOffset(10, 190),
     BackgroundColor3 = Color3.fromRGB(40, 43, 52), TextColor3 = white,
     PlaceholderText = "Paste your key here", PlaceholderColor3 = Color3.fromRGB(140, 140, 150),
     Text = "", ClearTextOnFocus = false, Font = Enum.Font.Gotham, TextSize = 12, BorderSizePixel = 0,
@@ -197,22 +220,22 @@ local keyBox = make("TextBox", {
 make("UICorner", { CornerRadius = UDim.new(0, 6) }, keyBox)
 
 local checkBtn = make("TextButton", {
-    Size = UDim2.fromOffset(280, 32), Position = UDim2.fromOffset(10, 194),
+    Size = UDim2.fromOffset(280, 32), Position = UDim2.fromOffset(10, 228),
     BackgroundColor3 = onColor, Text = "Check Key", TextColor3 = white,
     Font = Enum.Font.GothamBold, TextSize = 13, BorderSizePixel = 0,
 }, frame)
 make("UICorner", { CornerRadius = UDim.new(0, 6) }, checkBtn)
 
 statusLabel = make("TextLabel", {
-    Size = UDim2.fromOffset(280, 34), Position = UDim2.fromOffset(10, 232),
+    Size = UDim2.fromOffset(280, 34), Position = UDim2.fromOffset(10, 266),
     BackgroundTransparency = 1, TextColor3 = Color3.fromRGB(200, 200, 210),
     Font = Enum.Font.Gotham, TextSize = 11, TextWrapped = true,
     TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top,
-    Text = "Choose a provider, press Get Link, open the link in your browser.",
+    Text = "Choose a provider and key duration, press Get Link, open the link in your browser. Longer keys need more steps.",
 }, frame)
 
 make("TextLabel", {
-    Size = UDim2.fromOffset(280, 14), Position = UDim2.fromOffset(10, 270),
+    Size = UDim2.fromOffset(280, 14), Position = UDim2.fromOffset(10, 304),
     BackgroundTransparency = 1, TextColor3 = Color3.fromRGB(110, 115, 130),
     Font = Enum.Font.Gotham, TextSize = 9, TextXAlignment = Enum.TextXAlignment.Left,
     Text = "HWID: " .. HWID:sub(1, 8) .. "...",
