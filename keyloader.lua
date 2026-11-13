@@ -114,8 +114,8 @@ do
 end
 
 local frame = make("Frame", {
-    Size = UDim2.fromOffset(300, 324),
-    Position = UDim2.new(0.5, -150, 0.5, -162),
+    Size = UDim2.fromOffset(300, 342),
+    Position = UDim2.new(0.5, -150, 0.5, -171),
     BackgroundColor3 = Color3.fromRGB(28, 30, 36),
     BorderSizePixel = 0, Active = true, Draggable = true,
 }, gui)
@@ -140,9 +140,9 @@ make("TextLabel", {
 }, frame)
 
 local PROVIDERS = {
-    { id = "linkvertise", label = "Linkvertise" },
-    { id = "workink",     label = "Work.ink" },
-    { id = "lootlabs",    label = "Lootlabs" },
+    { id = "linkvertise", label = "Linkvertise", image = "https://consumersiteimages.trustpilot.net/business-units/5fada0839a033e00010810e6-198x149-1x.jpg" },
+    { id = "workink",     label = "Work.ink",    image = "https://work.ink/favicon.png" },
+    { id = "lootlabs",    label = "Lootlabs",    image = "https://creators.lootlabs.gg/assets/svg/logo.svg" },
 }
 -- hours = строк ключа, steps = скільки разів треба пройти посилання (24h = 1 крок, 48h = 2, 72h = 3)
 local DURATIONS = { 24, 48, 72 }
@@ -167,13 +167,38 @@ local function refreshProviders()
     if linkBox then linkBox.Text = "" end
 end
 
+-- Roblox не вміє показувати картинки за URL: завантажуємо іконку (через wsrv.nl, який перетворює
+-- jpg/svg у png), зберігаємо у папку Scanner і показуємо через getcustomasset.
+-- Якщо executor цього не вміє - кнопка просто лишається без картинки (лише текст).
+local function loadIcon(p, imgLabel)
+    local gca = getcustomasset or getsynasset
+    if not gca or not req then return end
+    local file = P("icon_" .. p.id .. ".png")
+    local okE, exists = pcall(function() return isfile and isfile(file) end)
+    if not (okE and exists) then
+        local url = ("https://wsrv.nl/?url=%s&w=64&h=64&fit=contain&output=png"):format(HttpService:UrlEncode(p.image))
+        local ok, res = pcall(req, { Url = url, Method = "GET" })
+        if not ok or type(res) ~= "table" or res.StatusCode ~= 200
+            or type(res.Body) ~= "string" or #res.Body < 100 then return end
+        if not pcall(writefile, file, res.Body) then return end
+    end
+    local okA, asset = pcall(gca, file)
+    if okA and asset and imgLabel.Parent then imgLabel.Image = asset end
+end
+
 for i, p in ipairs(PROVIDERS) do
     local b = make("TextButton", {
-        Size = UDim2.fromOffset(88, 28), Position = UDim2.fromOffset(10 + (i - 1) * 96, 52),
+        Size = UDim2.fromOffset(88, 46), Position = UDim2.fromOffset(10 + (i - 1) * 96, 52),
         BackgroundColor3 = btnColor, Text = p.label, TextColor3 = white,
         Font = Enum.Font.GothamBold, TextSize = 11, BorderSizePixel = 0,
+        TextYAlignment = Enum.TextYAlignment.Bottom,
     }, frame)
     make("UICorner", { CornerRadius = UDim.new(0, 6) }, b)
+    local img = make("ImageLabel", {
+        Size = UDim2.fromOffset(24, 24), Position = UDim2.new(0.5, -12, 0, 4),
+        BackgroundTransparency = 1, Image = "", ScaleType = Enum.ScaleType.Fit,
+    }, b)
+    task.spawn(loadIcon, p, img)
     provBtns[p.id] = b
     b.MouseButton1Click:Connect(function()
         provider = p.id
@@ -183,7 +208,7 @@ end
 
 for i, h in ipairs(DURATIONS) do
     local b = make("TextButton", {
-        Size = UDim2.fromOffset(88, 26), Position = UDim2.fromOffset(10 + (i - 1) * 96, 88),
+        Size = UDim2.fromOffset(88, 26), Position = UDim2.fromOffset(10 + (i - 1) * 96, 106),
         BackgroundColor3 = btnColor, Text = ("%dh · %d step%s"):format(h, h / 24, h > 24 and "s" or ""),
         TextColor3 = white, Font = Enum.Font.GothamBold, TextSize = 10, BorderSizePixel = 0,
     }, frame)
@@ -196,14 +221,14 @@ for i, h in ipairs(DURATIONS) do
 end
 
 local linkBtn = make("TextButton", {
-    Size = UDim2.fromOffset(280, 28), Position = UDim2.fromOffset(10, 122),
+    Size = UDim2.fromOffset(280, 28), Position = UDim2.fromOffset(10, 140),
     BackgroundColor3 = Color3.fromRGB(65, 95, 145), Text = "Get Link", TextColor3 = white,
     Font = Enum.Font.GothamBold, TextSize = 12, BorderSizePixel = 0,
 }, frame)
 make("UICorner", { CornerRadius = UDim.new(0, 6) }, linkBtn)
 
 linkBox = make("TextBox", {
-    Size = UDim2.fromOffset(280, 24), Position = UDim2.fromOffset(10, 156),
+    Size = UDim2.fromOffset(280, 24), Position = UDim2.fromOffset(10, 174),
     BackgroundColor3 = Color3.fromRGB(40, 43, 52), TextColor3 = Color3.fromRGB(200, 200, 210),
     PlaceholderText = "Your link appears here", PlaceholderColor3 = Color3.fromRGB(120, 120, 130),
     Text = "", ClearTextOnFocus = false, Font = Enum.Font.Gotham, TextSize = 10,
@@ -212,7 +237,7 @@ linkBox = make("TextBox", {
 make("UICorner", { CornerRadius = UDim.new(0, 6) }, linkBox)
 
 local keyBox = make("TextBox", {
-    Size = UDim2.fromOffset(280, 30), Position = UDim2.fromOffset(10, 190),
+    Size = UDim2.fromOffset(280, 30), Position = UDim2.fromOffset(10, 208),
     BackgroundColor3 = Color3.fromRGB(40, 43, 52), TextColor3 = white,
     PlaceholderText = "Paste your key here", PlaceholderColor3 = Color3.fromRGB(140, 140, 150),
     Text = "", ClearTextOnFocus = false, Font = Enum.Font.Gotham, TextSize = 12, BorderSizePixel = 0,
@@ -220,14 +245,14 @@ local keyBox = make("TextBox", {
 make("UICorner", { CornerRadius = UDim.new(0, 6) }, keyBox)
 
 local checkBtn = make("TextButton", {
-    Size = UDim2.fromOffset(280, 32), Position = UDim2.fromOffset(10, 228),
+    Size = UDim2.fromOffset(280, 32), Position = UDim2.fromOffset(10, 246),
     BackgroundColor3 = onColor, Text = "Check Key", TextColor3 = white,
     Font = Enum.Font.GothamBold, TextSize = 13, BorderSizePixel = 0,
 }, frame)
 make("UICorner", { CornerRadius = UDim.new(0, 6) }, checkBtn)
 
 statusLabel = make("TextLabel", {
-    Size = UDim2.fromOffset(280, 34), Position = UDim2.fromOffset(10, 266),
+    Size = UDim2.fromOffset(280, 34), Position = UDim2.fromOffset(10, 284),
     BackgroundTransparency = 1, TextColor3 = Color3.fromRGB(200, 200, 210),
     Font = Enum.Font.Gotham, TextSize = 11, TextWrapped = true,
     TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top,
@@ -235,7 +260,7 @@ statusLabel = make("TextLabel", {
 }, frame)
 
 make("TextLabel", {
-    Size = UDim2.fromOffset(280, 14), Position = UDim2.fromOffset(10, 304),
+    Size = UDim2.fromOffset(280, 14), Position = UDim2.fromOffset(10, 322),
     BackgroundTransparency = 1, TextColor3 = Color3.fromRGB(110, 115, 130),
     Font = Enum.Font.Gotham, TextSize = 9, TextXAlignment = Enum.TextXAlignment.Left,
     Text = "HWID: " .. HWID:sub(1, 8) .. "...",
