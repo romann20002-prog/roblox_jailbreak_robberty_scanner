@@ -55,7 +55,7 @@ end
 local HWID = getHwid()
 
 local function fetchScript(key)
-    if #HWID < 8 then return nil, "Could not read your device id (HWID)" end
+    if #HWID < 8 then return nil, "Could not read your HWID" end
     local ok, res = pcall(function()
         return req({
             Url = BASE .. "/api/script",
@@ -64,19 +64,19 @@ local function fetchScript(key)
             Body = HttpService:JSONEncode({ key = key, hwid = HWID }),
         })
     end)
-    if not ok or type(res) ~= "table" then return nil, "No connection to the key server" end
+    if not ok or type(res) ~= "table" then return nil, "Server is down right now, try again later" end
     if res.StatusCode == 200 and type(res.Body) == "string" and res.Body ~= "" then
         return res.Body
     end
     local okJ, data = pcall(function() return HttpService:JSONDecode(res.Body) end)
     if okJ and type(data) == "table" and data.reason then return nil, tostring(data.reason) end
-    return nil, "Key server error (" .. tostring(res.StatusCode) .. ")"
+    return nil, "Server error (" .. tostring(res.StatusCode) .. ")"
 end
 
 local function runScript(src)
     local f, err = loadstring(src)
     if not f then
-        warn("[KeyLoader] Script failed to compile: " .. tostring(err))
+        warn("[KeyLoader] Error 2")
         return false
     end
     task.spawn(f)
@@ -230,7 +230,7 @@ make("UICorner", { CornerRadius = UDim.new(0, 6) }, linkBtn)
 linkBox = make("TextBox", {
     Size = UDim2.fromOffset(280, 24), Position = UDim2.fromOffset(10, 174),
     BackgroundColor3 = Color3.fromRGB(40, 43, 52), TextColor3 = Color3.fromRGB(200, 200, 210),
-    PlaceholderText = "Your link appears here", PlaceholderColor3 = Color3.fromRGB(120, 120, 130),
+    PlaceholderText = "Copy link here", PlaceholderColor3 = Color3.fromRGB(120, 120, 130),
     Text = "", ClearTextOnFocus = false, Font = Enum.Font.Gotham, TextSize = 10,
     TextTruncate = Enum.TextTruncate.AtEnd, BorderSizePixel = 0,
 }, frame)
@@ -276,7 +276,7 @@ end)
 
 linkBtn.MouseButton1Click:Connect(function()
     if #HWID < 8 then
-        setStatus("Could not read your device id (HWID).")
+        setStatus("Could not read your HWID")
         return
     end
     local link = currentLink()
@@ -285,8 +285,8 @@ linkBtn.MouseButton1Click:Connect(function()
     local clip = setclipboard or toclipboard or (syn and syn.write_clipboard)
     if clip then copied = pcall(clip, link) end
     setStatus(copied
-        and "Link copied! Open it in your browser (same browser for the whole process), finish the steps, then paste the key here."
-        or "Copy the link above, open it in your browser, finish the steps, then paste the key here.")
+        and "Link copied!"
+        or "Copy the link above")
 end)
 
 local checking = false
@@ -294,7 +294,7 @@ checkBtn.MouseButton1Click:Connect(function()
     if checking then return end
     local key = (keyBox.Text:gsub("%s+", ""))
     if key == "" then
-        setStatus("Paste your key first.")
+        setStatus("Enter your key first")
         return
     end
     checking = true
@@ -305,11 +305,11 @@ checkBtn.MouseButton1Click:Connect(function()
         checking = false
         checkBtn.Text = "Check Key"
         if not src then
-            setStatus(reason or "Invalid key")
+            setStatus(reason or "Wrong key or HWID")
             return
         end
         saveKey(key)
-        setStatus("Key accepted. Loading...")
+        setStatus("Loading script...")
         gui:Destroy()
         runScript(src)
     end)
