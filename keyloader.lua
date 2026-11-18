@@ -148,7 +148,7 @@ make("TextLabel", {
 -- ============================================================
 local PROVIDERS = {
     { id = "linkvertise", label = "Linkvertise", enabled = true,  image = "https://consumersiteimages.trustpilot.net/business-units/5fada0839a033e00010810e6-198x149-1x.jpg" },
-    { id = "workink",     label = "Work.ink",    enabled = false,  image = "https://work.ink/favicon.png" },
+    { id = "workink",     label = "Work.ink",    enabled = true,  image = "https://work.ink/favicon.png" },
     { id = "lootlabs",    label = "Lootlabs",    enabled = true,  image = "https://creators.lootlabs.gg/assets/svg/logo.svg" },
 }
 -- hours = строк ключа, steps = скільки разів треба пройти посилання (24h = 1 крок, 48h = 2, 72h = 3)
