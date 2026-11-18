@@ -94,6 +94,8 @@ end
 local white = Color3.new(1, 1, 1)
 local btnColor = Color3.fromRGB(50, 53, 62)
 local onColor = Color3.fromRGB(50, 150, 80)
+local offColor = Color3.fromRGB(38, 40, 46)       -- колір вимкненого провайдера
+local offText = Color3.fromRGB(110, 112, 120)     -- колір тексту вимкненого провайдера
 
 local function make(class, props, parent)
     local o = Instance.new(class)
@@ -139,19 +141,32 @@ make("TextLabel", {
     Font = Enum.Font.GothamBold, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Left,
 }, frame)
 
+-- ============================================================
+-- ПРОВАЙДЕРИ
+-- enabled = true  -> можна вибрати
+-- enabled = false -> кнопка сіра, натиснути не можна (вимкнено)
+-- ============================================================
 local PROVIDERS = {
-    { id = "linkvertise", label = "Linkvertise", image = "https://consumersiteimages.trustpilot.net/business-units/5fada0839a033e00010810e6-198x149-1x.jpg" },
-    { id = "workink",     label = "Work.ink",    image = "https://work.ink/favicon.png" },
-    { id = "lootlabs",    label = "Lootlabs",    image = "https://creators.lootlabs.gg/assets/svg/logo.svg" },
+    { id = "linkvertise", label = "Linkvertise", enabled = true,  image = "https://consumersiteimages.trustpilot.net/business-units/5fada0839a033e00010810e6-198x149-1x.jpg" },
+    { id = "workink",     label = "Work.ink",    enabled = false,  image = "https://work.ink/favicon.png" },
+    { id = "lootlabs",    label = "Lootlabs",    enabled = true,  image = "https://creators.lootlabs.gg/assets/svg/logo.svg" },
 }
 -- hours = строк ключа, steps = скільки разів треба пройти посилання (24h = 1 крок, 48h = 2, 72h = 3)
 local DURATIONS = { 24, 48, 72 }
-local provider = PROVIDERS[1].id
+
+-- обираємо першого ввімкненого провайдера за замовчуванням
+local provider = nil
+for _, p in ipairs(PROVIDERS) do
+    if p.enabled then provider = p.id break end
+end
+
 local hours = DURATIONS[1]
 local provBtns = {}
+local provImgs = {}
 local durBtns = {}
 
 local linkBox, statusLabel
+local setStatus = function() end -- буде визначено нижче (потрібно заздалегідь, бо кнопки його викликають)
 
 local function currentLink()
     return ("%s/start?hwid=%s&p=%s&h=%d"):format(BASE, HWID, provider, hours)
@@ -159,7 +174,14 @@ end
 
 local function refreshProviders()
     for _, p in ipairs(PROVIDERS) do
-        provBtns[p.id].BackgroundColor3 = (p.id == provider) and onColor or btnColor
+        local b = provBtns[p.id]
+        if not p.enabled then
+            b.BackgroundColor3 = offColor
+            b.TextColor3 = offText
+        else
+            b.BackgroundColor3 = (p.id == provider) and onColor or btnColor
+            b.TextColor3 = white
+        end
     end
     for _, h in ipairs(DURATIONS) do
         durBtns[h].BackgroundColor3 = (h == hours) and onColor or btnColor
@@ -192,15 +214,24 @@ for i, p in ipairs(PROVIDERS) do
         BackgroundColor3 = btnColor, Text = p.label, TextColor3 = white,
         Font = Enum.Font.GothamBold, TextSize = 11, BorderSizePixel = 0,
         TextYAlignment = Enum.TextYAlignment.Bottom,
+        AutoButtonColor = p.enabled,
     }, frame)
     make("UICorner", { CornerRadius = UDim.new(0, 6) }, b)
     local img = make("ImageLabel", {
         Size = UDim2.fromOffset(24, 24), Position = UDim2.new(0.5, -12, 0, 4),
         BackgroundTransparency = 1, Image = "", ScaleType = Enum.ScaleType.Fit,
+        ImageTransparency = p.enabled and 0 or 0.65,
     }, b)
-    task.spawn(loadIcon, p, img)
+    if p.enabled then
+        task.spawn(loadIcon, p, img) -- для вимкненого провайдера іконку не вантажимо
+    end
     provBtns[p.id] = b
+    provImgs[p.id] = img
     b.MouseButton1Click:Connect(function()
+        if not p.enabled then
+            setStatus(p.label .. " is temporarily unavailable. Choose another provider.")
+            return
+        end
         provider = p.id
         refreshProviders()
     end)
@@ -266,15 +297,23 @@ make("TextLabel", {
     Text = "HWID: " .. HWID:sub(1, 8) .. "...",
 }, frame)
 
-local function setStatus(t) statusLabel.Text = tostring(t) end
+setStatus = function(t) statusLabel.Text = tostring(t) end
 
 refreshProviders()
+
+if not provider then
+    setStatus("All providers are temporarily unavailable. Try again later.")
+end
 
 closeBtn.MouseButton1Click:Connect(function()
     gui:Destroy()
 end)
 
 linkBtn.MouseButton1Click:Connect(function()
+    if not provider then
+        setStatus("All providers are temporarily unavailable. Try again later.")
+        return
+    end
     if #HWID < 8 then
         setStatus("Could not read your HWID")
         return
