@@ -10,7 +10,7 @@ local CONFIG = {
     KEY_FILE   = "key.txt",
 }
 
-local BASE = (CONFIG.WORKER_URL:gsub("/+$", "")) -- адреса без кінцевого "/"
+local BASE = (CONFIG.WORKER_URL:gsub("/+$", ""))
 
 local HttpService = game:GetService("HttpService")
 local Players     = game:GetService("Players")
@@ -94,8 +94,8 @@ end
 local white = Color3.new(1, 1, 1)
 local btnColor = Color3.fromRGB(50, 53, 62)
 local onColor = Color3.fromRGB(50, 150, 80)
-local offColor = Color3.fromRGB(38, 40, 46)       -- колір вимкненого провайдера
-local offText = Color3.fromRGB(110, 112, 120)     -- колір тексту вимкненого провайдера
+local offColor = Color3.fromRGB(38, 40, 46)
+local offText = Color3.fromRGB(110, 112, 120)
 
 local function make(class, props, parent)
     local o = Instance.new(class)
@@ -141,20 +141,13 @@ make("TextLabel", {
     Font = Enum.Font.GothamBold, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Left,
 }, frame)
 
--- ============================================================
--- ПРОВАЙДЕРИ
--- enabled = true  -> можна вибрати
--- enabled = false -> кнопка сіра, натиснути не можна (вимкнено)
--- ============================================================
 local PROVIDERS = {
     { id = "linkvertise", label = "Linkvertise", enabled = true,  image = "https://consumersiteimages.trustpilot.net/business-units/5fada0839a033e00010810e6-198x149-1x.jpg" },
     { id = "workink",     label = "Work.ink",    enabled = true,  image = "https://work.ink/favicon.png" },
     { id = "lootlabs",    label = "Lootlabs",    enabled = true,  image = "https://creators.lootlabs.gg/assets/svg/logo.svg" },
 }
--- hours = строк ключа, steps = скільки разів треба пройти посилання (24h = 1 крок, 48h = 2, 72h = 3)
 local DURATIONS = { 24, 48, 72 }
 
--- обираємо першого ввімкненого провайдера за замовчуванням
 local provider = nil
 for _, p in ipairs(PROVIDERS) do
     if p.enabled then provider = p.id break end
@@ -166,7 +159,7 @@ local provImgs = {}
 local durBtns = {}
 
 local linkBox, statusLabel
-local setStatus = function() end -- буде визначено нижче (потрібно заздалегідь, бо кнопки його викликають)
+local setStatus = function() end
 
 local function currentLink()
     return ("%s/start?hwid=%s&p=%s&h=%d"):format(BASE, HWID, provider, hours)
@@ -189,9 +182,6 @@ local function refreshProviders()
     if linkBox then linkBox.Text = "" end
 end
 
--- Roblox не вміє показувати картинки за URL: завантажуємо іконку (через wsrv.nl, який перетворює
--- jpg/svg у png), зберігаємо у папку Scanner і показуємо через getcustomasset.
--- Якщо executor цього не вміє - кнопка просто лишається без картинки (лише текст).
 local function loadIcon(p, imgLabel)
     local gca = getcustomasset or getsynasset
     if not gca or not req then return end
@@ -223,7 +213,7 @@ for i, p in ipairs(PROVIDERS) do
         ImageTransparency = p.enabled and 0 or 0.65,
     }, b)
     if p.enabled then
-        task.spawn(loadIcon, p, img) -- для вимкненого провайдера іконку не вантажимо
+        task.spawn(loadIcon, p, img)
     end
     provBtns[p.id] = b
     provImgs[p.id] = img
